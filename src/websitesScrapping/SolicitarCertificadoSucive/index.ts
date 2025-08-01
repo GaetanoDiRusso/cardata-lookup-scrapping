@@ -245,8 +245,8 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
         });
 
         return {
-            imagePaths: [Buffer.from(initialDataScreenshotBuffer), Buffer.from(formFilledScreenshotBuffer), Buffer.from(formFilledScreenshotBuffer2)],
-            pdfPaths: [Buffer.from(initialDataPdfBuffer), Buffer.from(formFilledPdfBuffer), Buffer.from(formFilledPdfBuffer2)],
+            imageBuffers: [Buffer.from(initialDataScreenshotBuffer), Buffer.from(formFilledScreenshotBuffer), Buffer.from(formFilledScreenshotBuffer2)],
+            pdfBuffers: [Buffer.from(initialDataPdfBuffer), Buffer.from(formFilledPdfBuffer), Buffer.from(formFilledPdfBuffer2)],
             data: {
                 transactionNumber: transactionNumber || undefined
             },

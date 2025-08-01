@@ -9,6 +9,7 @@ import { generateAndSavePaymentAgreementData } from './domain/usecases/paymentAg
 import { generateAndSaveMatriculaRequeridaData } from './domain/usecases/matriculaRequeridaData.usecases';
 import { solicitarCertificadoSuciveUseCase } from './domain/usecases/consultarCertificadoSucive.usecases';
 import { emitirCertificadoSuciveDataUseCase } from './domain/usecases/emitirCertificadoSucive.usecases';
+import { mediaService } from './data/MediaServices';
 
 // Load environment variables
 dotenv.config();

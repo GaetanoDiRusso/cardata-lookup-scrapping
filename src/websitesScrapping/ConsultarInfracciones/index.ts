@@ -116,8 +116,8 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
         });
 
         return {
-            imagePaths: [Buffer.from(screenshotBuffer)],
-            pdfPaths: [Buffer.from(pdfBuffer)],
+            imageBuffers: [Buffer.from(screenshotBuffer)],
+            pdfBuffers: [Buffer.from(pdfBuffer)],
             data: {
                 hasInfractions: !hasNoInfractionsLabel,
             },

@@ -97,8 +97,8 @@ export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarM
         });
 
         return {
-            imagePaths: [Buffer.from(screenshotBufferWithDataFilled), Buffer.from(screenshotBufferWithResult)],
-            pdfPaths: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
+            imageBuffers: [Buffer.from(screenshotBufferWithDataFilled), Buffer.from(screenshotBufferWithResult)],
+            pdfBuffers: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
             data: alertResult,
         };
     } catch (error) {

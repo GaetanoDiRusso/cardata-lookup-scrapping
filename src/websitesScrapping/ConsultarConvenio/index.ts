@@ -125,8 +125,8 @@ export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioDat
         });
 
         return {
-            imagePaths: [Buffer.from(screenshotBufferWithDataFilled), Buffer.from(screenshotBuffer)],
-            pdfPaths: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
+            imageBuffers: [Buffer.from(screenshotBufferWithDataFilled), Buffer.from(screenshotBuffer)],
+            pdfBuffers: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
             data: {
                 hasConvenio: !hasNoConvenioLabel,
             },

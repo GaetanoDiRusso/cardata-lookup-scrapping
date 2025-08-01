@@ -79,6 +79,21 @@ export interface IMediaService {
      * @returns Promise con las estadísticas de uso
      */
     getUsageStats(options?: UsageStatsOptions): Promise<UsageStats>;
+
+    /**
+     * Regenera una URL firmada con un nuevo tiempo de expiración
+     * @param fileId - ID del archivo
+     * @param options - Opciones para generar la URL
+     * @returns Promise con la nueva URL firmada
+     */
+    regenerateSignedUrl(fileId: string, options?: SignedUrlOptions): Promise<string>;
+
+    /**
+     * Valida si una URL firmada sigue siendo válida
+     * @param url - URL firmada a validar
+     * @returns Promise que se resuelve a true si es válida, false en caso contrario
+     */
+    validateSignedUrl(url: string): Promise<boolean>;
 }
 
 /**
@@ -130,6 +145,7 @@ export interface SignedUrlOptions {
     transformation?: any[];
     format?: string;
     quality?: 'auto' | number;
+    resourceType?: 'image' | 'raw' | 'video'; // Tipo de recurso para la URL
 }
 
 /**

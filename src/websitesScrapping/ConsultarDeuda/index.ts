@@ -115,8 +115,8 @@ export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData): Pr
         });
 
         return {
-            imagePaths: [Buffer.from(screenshotBuffer)],
-            pdfPaths: [Buffer.from(pdfBuffer)],
+            imageBuffers: [Buffer.from(screenshotBuffer)],
+            pdfBuffers: [Buffer.from(pdfBuffer)],
             data: {},
         };
     } catch (error) {

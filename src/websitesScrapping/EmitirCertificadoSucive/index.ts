@@ -167,8 +167,8 @@ export const emitirCertificadoSuciveData = async (vehicleData: EmitirCertificado
         rmdirSync(downloadPathFolder);
 
         return {
-            imagePaths: [],
-            pdfPaths: [pdfBuffer],
+            imageBuffers: [],
+            pdfBuffers: [pdfBuffer],
             data: {},
         };
     } catch (error) {

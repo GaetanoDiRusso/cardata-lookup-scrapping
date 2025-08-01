@@ -68,10 +68,10 @@ export class CloudinaryMediaService implements IMediaService {
             // Configurar opciones de subida
             const uploadOptions = {
                 public_id: publicId,
-                folder: folder || this.DEFAULT_FOLDER,
+                // No especificar folder si ya está en publicId para evitar duplicación
                 resource_type: resourceType,
-                type: 'private',
-                access_mode: options.accessMode || 'authenticated',
+                type: 'upload', // Mantener como 'upload' para URLs correctas
+                access_mode: options.accessMode || 'authenticated', // Volver a 'authenticated'
                 transformation: options.transformation,
                 quality: options.quality,
                 format: options.format,
@@ -114,12 +114,43 @@ export class CloudinaryMediaService implements IMediaService {
     async getSignedUrl(fileId: string, options: SignedUrlOptions = {}): Promise<string> {
         try {
             const { publicId } = this.parseFileId(fileId);
-            const resourceType = this.determineResourceType(fileId);
-            const expiresIn = options.expiresIn || 3600; // 1 hora por defecto
+            const resourceType = options.resourceType || this.determineResourceType(fileId);
+            const expiresIn = options.expiresIn || 86400; // 24 horas por defecto (en lugar de 1 hora)
+
+            const signedUrl = cloudinary.url(publicId, {
+                resource_type: resourceType,
+                sign_url: true,
+                secure: true,
+                expires_at: Math.round(Date.now() / 1000) + expiresIn,
+                transformation: options.transformation,
+                format: options.format,
+                quality: options.quality,
+                fetch_format: 'auto'
+            });
+
+            return signedUrl;
+
+        } catch (error) {
+            console.error(`Error generating signed URL for ${fileId}:`, error);
+            throw new Error(`Failed to generate signed URL for ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * @method regenerateSignedUrl
+     * @description Regenera una URL firmada con un nuevo tiempo de expiración
+     * @param fileId - ID del archivo
+     * @param options - Opciones para generar la URL
+     * @returns Promise con la nueva URL firmada
+     */
+    async regenerateSignedUrl(fileId: string, options: SignedUrlOptions = {}): Promise<string> {
+        try {
+            const { publicId } = this.parseFileId(fileId);
+            const resourceType = options.resourceType || this.determineResourceType(fileId);
+            const expiresIn = options.expiresIn || 86400; // 24 horas por defecto
 
             return cloudinary.url(publicId, {
                 resource_type: resourceType,
-                type: 'private',
                 sign_url: true,
                 secure: true,
                 expires_at: Math.round(Date.now() / 1000) + expiresIn,
@@ -130,8 +161,24 @@ export class CloudinaryMediaService implements IMediaService {
             });
 
         } catch (error) {
-            console.error(`Error generating signed URL for ${fileId}:`, error);
-            throw new Error(`Failed to generate signed URL for ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error(`Error regenerating signed URL for ${fileId}:`, error);
+            throw new Error(`Failed to regenerate signed URL for ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * @method validateSignedUrl
+     * @description Valida si una URL firmada sigue siendo válida
+     * @param url - URL firmada a validar
+     * @returns Promise que se resuelve a true si es válida, false en caso contrario
+     */
+    async validateSignedUrl(url: string): Promise<boolean> {
+        try {
+            const response = await fetch(url, { method: 'HEAD' });
+            return response.ok;
+        } catch (error) {
+            console.error('Error validating signed URL:', error);
+            return false;
         }
     }
 
@@ -319,13 +366,13 @@ export class CloudinaryMediaService implements IMediaService {
             const nameWithoutExt = parts[0].replace(/\.[^/.]+$/, '');
             return { publicId: nameWithoutExt };
         } else {
-            // Archivo en carpeta: "users/123/photo.jpg" -> publicId: "photo", folder: "users/123"
+            // Archivo en carpeta: "users/123/photo.jpg" -> publicId: "users/123/photo", folder: "users/123"
             const fileName = parts[parts.length - 1];
             const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
             const folder = parts.slice(0, -1).join('/');
             
             return { 
-                publicId: nameWithoutExt,
+                publicId: `${folder}/${nameWithoutExt}`, // Incluir la carpeta en el publicId
                 folder: folder
             };
         }
@@ -353,7 +400,7 @@ export class CloudinaryMediaService implements IMediaService {
     private determineResourceType(fileId: string): 'image' | 'raw' | 'video' {
         const extension = fileId.split('.').pop()?.toLowerCase();
         
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'];
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'pdf']; // PDFs como image por defecto
         const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'];
         
         if (imageExtensions.includes(extension || '')) {

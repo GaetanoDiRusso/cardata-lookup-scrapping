@@ -1,5 +1,5 @@
 export interface IWebsiteScrappingResult<T> {
-    imagePaths: Buffer[];
-    pdfPaths: Buffer[];
+    imageBuffers: Buffer[];
+    pdfBuffers: Buffer[];
     data: T;
 }
