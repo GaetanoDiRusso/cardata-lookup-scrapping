@@ -71,6 +71,7 @@ export const generateAndSaveMatriculaRequeridaData = async (currentUser: any, ve
         return {
             imagePathsUrls: imageUrls,
             pdfPathsUrls: pdfUrls,
+            videoPathsUrls: [], // No video recording for this use case yet
             data
         };
 

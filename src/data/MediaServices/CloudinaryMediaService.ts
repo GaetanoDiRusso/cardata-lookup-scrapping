@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { 
     IMediaService, 
     MediaFile, 
@@ -9,6 +9,7 @@ import {
     UsageStats, 
     UsageStatsOptions 
 } from '../../domain/interfaces/IMediaService';
+import { PassThrough } from 'stream';
 
 /**
  * @class CloudinaryMediaService
@@ -71,7 +72,7 @@ export class CloudinaryMediaService implements IMediaService {
                 // No especificar folder si ya está en publicId para evitar duplicación
                 resource_type: resourceType,
                 type: 'upload', // Mantener como 'upload' para URLs correctas
-                access_mode: options.accessMode || 'authenticated', // Volver a 'authenticated'
+                access_mode: options.accessMode || 'public', // Volver a 'authenticated'
                 transformation: options.transformation,
                 quality: options.quality,
                 format: options.format,
@@ -80,6 +81,10 @@ export class CloudinaryMediaService implements IMediaService {
 
             // Subir archivo
             const result = await this.uploadToCloudinary(buffer, uploadOptions);
+
+            if (!result) {
+                throw new Error(`Failed to upload file ${fileId}`);
+            }
 
             return this.createMediaFile(fileId, result);
 
@@ -103,6 +108,91 @@ export class CloudinaryMediaService implements IMediaService {
 
         return Promise.all(uploadPromises);
     }
+
+    /**
+     * @method getVideoStream
+     * @description Obtiene un stream de video para subir directamente a Cloudinary
+     * @param fileId - ID del archivo
+     * @param options - Opciones de subida
+     * @returns Promise con el stream de video y callback de resultado
+     */
+    async getVideoStream(fileId: string, options: UploadOptions = {}): Promise<PassThrough> {
+        const { publicId, folder } = this.parseFileId(fileId);
+        const resourceType = options.resourceType || 'video';
+
+        // Crear PassThrough stream con configuración optimizada
+        const pipeStream = new PassThrough({
+            highWaterMark: 32 * 1024, // 32KB buffer (más pequeño para evitar timeouts)
+            allowHalfOpen: false
+        });
+
+        // Configurar opciones de subida con timeout
+        const uploadOptions = {
+            public_id: publicId,
+            resource_type: resourceType,
+            type: 'upload',
+            access_mode: options.accessMode || 'authenticated',
+            transformation: options.transformation,
+            quality: options.quality,
+            format: options.format,
+            context: options.metadata,
+            timeout: 300000, // 5 minutos de timeout
+            chunk_size: 6000000, // 6MB chunks para videos grandes
+            eager: [], // Sin transformaciones eager para evitar timeouts
+            eager_async: false
+        };
+
+        // Crear cloudinaryStream con mejor manejo de errores
+        const cloudinaryStream = cloudinary.uploader.upload_stream(
+            uploadOptions,
+            (error, result) => {
+                if (error) {
+                    console.error(`Cloudinary upload error for ${fileId}:`, {
+                        message: error.message,
+                        http_code: error.http_code,
+                        name: error.name,
+                        fileId,
+                        publicId
+                    });
+                    
+                    // Emitir error en el stream
+                    pipeStream.emit('error', new Error(`Cloudinary upload failed: ${error.message}`));
+                } else if (result) {
+                    console.log(`Video uploaded successfully: ${fileId}`, {
+                        public_id: result.public_id,
+                        size: result.bytes,
+                        format: result.format
+                    });
+                }
+            }
+        );
+
+        // Conectar PassThrough a Cloudinary
+        pipeStream.pipe(cloudinaryStream);
+
+        // Manejar errores del stream
+        pipeStream.on('error', (error) => {
+            console.error(`Stream error for ${fileId}:`, error);
+            cloudinaryStream.destroy(error);
+        });
+
+        cloudinaryStream.on('error', (error) => {
+            console.error(`Cloudinary stream error for ${fileId}:`, error);
+            pipeStream.destroy(error);
+        });
+
+        // Manejar cuando el stream se cierra
+        pipeStream.on('close', () => {
+            console.log(`Stream closed for ${fileId}`);
+        });
+
+        cloudinaryStream.on('close', () => {
+            console.log(`Cloudinary stream closed for ${fileId}`);
+        });
+
+        return pipeStream;
+    }
+    
 
     /**
      * @method getSignedUrl
@@ -420,7 +510,7 @@ export class CloudinaryMediaService implements IMediaService {
      * @param options - Opciones de subida
      * @returns Promise con el resultado de la subida
      */
-    private uploadToCloudinary(buffer: Buffer, options: any): Promise<any> {
+    private uploadToCloudinary(buffer: Buffer, options: any): Promise<UploadApiResponse | undefined> {
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 options,
@@ -445,11 +535,12 @@ export class CloudinaryMediaService implements IMediaService {
      * @param result - Resultado de Cloudinary
      * @returns Objeto MediaFile
      */
-    private createMediaFile(fileId: string, result: any): MediaFile {
+    private createMediaFile(fileId: string, result: UploadApiResponse): MediaFile {
         return {
             id: fileId,
             publicId: result.public_id,
-            url: this.generateSignedUrl(result.public_id, result.resource_type),
+            // url: this.generateSignedUrl(result.public_id, result.resource_type),
+            url: result.secure_url,
             size: result.bytes || 0,
             format: result.format || 'unknown',
             resourceType: result.resource_type as 'image' | 'raw' | 'video',

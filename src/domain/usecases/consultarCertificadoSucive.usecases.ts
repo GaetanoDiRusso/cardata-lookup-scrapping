@@ -78,6 +78,7 @@ export const solicitarCertificadoSuciveUseCase = async (currentUser: any, params
         return {
             imagePathsUrls: imageUrls,
             pdfPathsUrls: pdfUrls,
+            videoPathsUrls: [], // No video recording for this use case yet
             data
         };
 

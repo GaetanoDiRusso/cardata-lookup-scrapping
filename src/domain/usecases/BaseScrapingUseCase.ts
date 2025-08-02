@@ -25,7 +25,13 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
             // Template step 1: Execute scraping
             const scrapingParams = this.getScrapingParams(currentUser, params);
             const scrapingFunction = this.getScrapingFunction();
-            const { imageBuffers, pdfBuffers, data } = await scrapingFunction(scrapingParams);
+            const { imageBuffers, pdfBuffers, videoBuffers = [], data } = await scrapingFunction(scrapingParams);
+
+            // Log video buffer information
+            console.log(`Video buffers received: ${videoBuffers.length}`);
+            videoBuffers.forEach((buffer, index) => {
+                console.log(`Video buffer ${index}: ${buffer ? buffer.length : 'null'} bytes`);
+            });
 
             // Template step 2: Generate unique IDs for files
             const basePath = this.getBasePath(currentUser, params);
@@ -38,7 +44,7 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
                     buffer: imageBuffer,
                     options: {
                         resourceType: 'image' as const,
-                        accessMode: 'authenticated' as const,
+                        accessMode: 'public' as const,
                         transformation: [
                             { quality: 'auto', fetch_format: 'auto' },
                             { width: 1200, height: 800, crop: 'limit' }
@@ -50,8 +56,20 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
                     fileId: `${basePath}/report-${index}.pdf`,
                     buffer: pdfBuffer,
                     options: {
-                        resourceType: 'image' as const,
-                        accessMode: 'authenticated' as const
+                        resourceType: 'raw' as const,
+                        accessMode: 'public' as const
+                    }
+                })),
+                // Videos
+                ...videoBuffers.map((videoBuffer, index) => ({
+                    fileId: `${basePath}/scraping-video-${index}.mp4`,
+                    buffer: videoBuffer,
+                    options: {
+                        resourceType: 'video' as const,
+                        accessMode: 'public' as const,
+                        transformation: [
+                            { quality: 'auto', fetch_format: 'auto' }
+                        ]
                     }
                 }))
             ];
@@ -62,30 +80,44 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
             // Template step 5: Separate URLs by type
             const screenshotFiles = uploadedFiles.filter(file => file.id.includes('screenshot'));
             const pdfFiles = uploadedFiles.filter(file => file.id.includes('report'));
+            const videoFiles = uploadedFiles.filter(file => file.id.includes('scraping-video'));
 
-            // Template step 6: Get signed URLs
-            const imageUrls = await Promise.all(
-                screenshotFiles.map(file => mediaService.getSignedUrl(file.id, { 
-                    resourceType: 'image',
-                    expiresIn: 86400 // 24 hours
-                }))
-            );
+            // // Template step 6: Get signed URLs
+            // const imageUrls = await Promise.all(
+            //     screenshotFiles.map(file => mediaService.getSignedUrl(file.id, { 
+            //         resourceType: 'image',
+            //         expiresIn: 86400 // 24 hours
+            //     }))
+            // );
 
-            const pdfUrls = await Promise.all(
-                pdfFiles.map(file => mediaService.getSignedUrl(file.id, { 
-                    resourceType: 'image',
-                    expiresIn: 86400 // 24 hours
-                }))
-            );
+            // const pdfUrls = await Promise.all(
+            //     pdfFiles.map(file => mediaService.getSignedUrl(file.id, { 
+            //         resourceType: 'raw',
+            //         expiresIn: 86400 // 24 hours
+            //     }))
+            // );
+
+            // const videoUrls = await Promise.all(
+            //     videoFiles.map(file => mediaService.getSignedUrl(file.id, { 
+            //         resourceType: 'video',
+            //         expiresIn: 86400 // 24 hours
+            //     }))
+            // );
+
+            const imageUrls = screenshotFiles.map(file => file.url);
+            const pdfUrls = pdfFiles.map(file => file.url);
+            const videoUrls = videoFiles.map(file => file.url);
 
             // Template step 7: Clear buffers from memory
             imageBuffers.length = 0;
             pdfBuffers.length = 0;
+            videoBuffers.length = 0;
 
             // Template step 8: Return result
             return {
                 imagePathsUrls: imageUrls,
                 pdfPathsUrls: pdfUrls,
+                videoPathsUrls: videoUrls,
                 data
             };
 

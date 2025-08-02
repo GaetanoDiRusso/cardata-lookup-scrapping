@@ -3,6 +3,9 @@ import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
 import puppeteer from 'puppeteer';
 import { getDepartamentoValue } from './utils';
 import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
+import { PassThrough } from 'stream';
+
 export type ConsultarInfraccionesData = Pick<VehiculePropertyRegisterData, 'matricula' | 'padron' | 'departamento'>;
 
 const SUCIVE_MULTAS_URL = 'https://www.sucive.gub.uy/consulta_multas?1';
@@ -24,6 +27,17 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
 
         // Set viewport size
         await page.setViewport({ width: 1280, height: 800 });
+
+        const passThrough = new PassThrough();
+        const recorder = new PuppeteerScreenRecorder(page);
+        await recorder.startStream(passThrough);
+
+        // Save the video stream to a Buffer
+        let chunks: Buffer[] = [];
+
+        passThrough.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
 
         // Navigate to the SUCIVE website
         await page.goto(SUCIVE_MULTAS_URL, {
@@ -103,6 +117,10 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
         // Take a screenshot of the results page
         const screenshotBuffer = await page.screenshot({ fullPage: true });
 
+        await recorder.stop();
+
+        const videoBuffer = Buffer.concat(chunks);
+
         // Generate PDF of the page
         const pdfBuffer = await page.pdf({
             format: 'A4',
@@ -118,6 +136,7 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
         return {
             imageBuffers: [Buffer.from(screenshotBuffer)],
             pdfBuffers: [Buffer.from(pdfBuffer)],
+            videoBuffers: [videoBuffer], // Solo un video por scraping
             data: {
                 hasInfractions: !hasNoInfractionsLabel,
             },

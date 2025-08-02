@@ -71,6 +71,7 @@ export const generateAndSavePaymentAgreementData = async (currentUser: any, vehi
         return {
             imagePathsUrls: imageUrls,
             pdfPathsUrls: pdfUrls,
+            videoPathsUrls: [], // No video recording for this use case yet
             data
         };
 
