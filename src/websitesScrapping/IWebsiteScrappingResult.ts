@@ -3,4 +3,6 @@ export interface IWebsiteScrappingResult<T> {
     pdfBuffers: Buffer[];
     videoBuffers?: Buffer[];
     data: T;
+    success: boolean;
+    error?: string;
 }

@@ -177,36 +177,3 @@ app.post('/api/emitir-certificado-sucive', async (req: Request, res: Response) =
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
-
-// generateAndSaveInfractionData(
-//     {
-//         userId: '1'
-//     },
-//     {
-//         matricula: 'SBV1469',
-//         padron: '902843157',
-//         departamento: DepartamentoEnum.MONTEVIDEO
-//     }
-// ).then(console.log).catch(console.error);
-
-// generateAndSaveDebtData(
-//     {
-//         userId: '1'
-//     },
-//     {
-//         matricula: 'SBV1469',
-//         padron: '902843157',
-//         departamento: DepartamentoEnum.MONTEVIDEO
-//     }
-// ).then(console.log).catch(console.error);
-
-// generateAndSavePaymentAgreementData(
-//     {
-//         userId: '1'
-//     },
-//     {
-//         matricula: 'SBV1469',
-//         padron: '902843157',
-//         departamento: DepartamentoEnum.MONTEVIDEO
-//     }
-// ).then(console.log).catch(console.error);

@@ -5,8 +5,6 @@ import { CaptchaError, CaptchaErrorCodeEnum } from '../CaptchaError';
 
 export const solveCaptchaV2: solveCaptchaV2Type = async (captchaData) => {
     try {
-        console.log("Solving captcha :: CapMonster :: " + captchaData.url);
-
         const cmcClient = CapMonsterCloudClientFactory.Create(new ClientOptions({ clientKey: CAPMONSTER_API_KEY }));
         
         const recaptchaV2ProxylessRequest = new RecaptchaV2ProxylessRequest({

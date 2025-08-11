@@ -25,13 +25,12 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
             // Template step 1: Execute scraping
             const scrapingParams = this.getScrapingParams(currentUser, params);
             const scrapingFunction = this.getScrapingFunction();
-            const { imageBuffers, pdfBuffers, videoBuffers = [], data } = await scrapingFunction(scrapingParams);
+            const { imageBuffers = [], pdfBuffers = [], videoBuffers = [], data, success, error } = await scrapingFunction(scrapingParams);
 
-            // Log video buffer information
-            console.log(`Video buffers received: ${videoBuffers.length}`);
-            videoBuffers.forEach((buffer, index) => {
-                console.log(`Video buffer ${index}: ${buffer ? buffer.length : 'null'} bytes`);
-            });
+            if (!success) {
+                this.handleFailedScraping(currentUser, params, imageBuffers, pdfBuffers, videoBuffers, error);
+                throw new Error(error || 'Scraping failed');
+            }
 
             // Template step 2: Generate unique IDs for files
             const basePath = this.getBasePath(currentUser, params);
@@ -125,5 +124,56 @@ export abstract class BaseScrapingUseCase<TData, TParams extends BaseParams, TUs
             console.error(`Error in ${this.constructor.name}:`, error);
             throw new Error(`${this.getErrorMessage()}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    }
+
+    private async handleFailedScraping(currentUser: TUser, params: TParams, imageBuffers: Buffer[], pdfBuffers: Buffer[], videoBuffers: Buffer[], error?: string) {
+        console.log("Error in scraping. Error data: ", {
+            name: this.constructor.name,
+            currentUser,
+            params,
+            imageBuffers,
+            pdfBuffers,
+            videoBuffers,
+            error
+        });
+
+        const basePath = this.getBasePath(currentUser, params);
+
+        const filesToUpload = [
+            ...imageBuffers.map((imageBuffer, index) => ({
+                fileId: `${basePath}/failed-screenshot-${index}.png`,
+                buffer: imageBuffer,
+                options: {
+                    resourceType: 'image' as const,
+                    accessMode: 'public' as const,
+                    transformation: [
+                        { quality: 'auto', fetch_format: 'auto' },
+                        { width: 1200, height: 800, crop: 'limit' }
+                    ]
+                }
+            })),
+            ...pdfBuffers.map((pdfBuffer, index) => ({
+                fileId: `${basePath}/failed-report-${index}.pdf`,
+                buffer: pdfBuffer,
+                options: {
+                    resourceType: 'raw' as const,
+                    accessMode: 'public' as const
+                }
+            })),
+            ...videoBuffers.map((videoBuffer, index) => ({
+                fileId: `${basePath}/failed-scraping-video-${index}.mp4`,
+                buffer: videoBuffer,
+                options: {
+                    resourceType: 'video' as const,
+                    accessMode: 'public' as const,
+                    transformation: [
+                        { quality: 'auto', fetch_format: 'auto' }
+                    ]
+                }
+            }))
+        ];
+
+        const uploadedFiles = await mediaService.uploadFiles(filesToUpload);
+        console.log("Uploaded files: ", uploadedFiles);
     }
 } 

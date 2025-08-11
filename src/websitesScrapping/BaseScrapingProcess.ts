@@ -21,8 +21,10 @@ export abstract class BaseScrapingProcess<TData, TResult> {
         const browser = await this.launchBrowser(headless);
         let videoRecorder: VideoRecorder | null = null;
 
+        let page: Page | null = null;
+
         try {
-            const page = await browser.newPage();
+            page = await browser.newPage();
             await page.setViewport({ width: 1280, height: 800 });
 
             // Initialize video recorder
@@ -38,10 +40,24 @@ export abstract class BaseScrapingProcess<TData, TResult> {
             return {
                 ...result,
                 videoBuffers: [videoBuffer],
+                success: true,
+                error: undefined
             };
         } catch (error) {
             console.error('Error in scraping process:', error);
-            throw error;
+
+            const videoBuffer = await videoRecorder?.stop();
+
+            // const errorScreenshotBuffer = await page?.screenshot({ fullPage: true });
+
+            return {
+                imageBuffers: [],
+                pdfBuffers: [],
+                videoBuffers: videoBuffer ? [videoBuffer] : [],
+                data: {} as TResult,
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
         } finally {
             // Clean up video recorder
             if (videoRecorder) {
