@@ -1,3 +1,4 @@
 .env
 puppeteer-downloads/*
 public/*
+node_modules/*
