@@ -28,12 +28,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Simple route for testing
 app.get('/', (req: Request, res: Response) => {
-    res.json({ message: 'Welcome to the TypeScript backend API' });
+    res.status(200).json({ message: 'Welcome to the TypeScript backend API' });
 });
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
-    res.json({ message: 'Server is running' });
+    res.status(200).json({ message: 'Server is running' });
 });
 
 // Endpoint for infractions query
