@@ -17,13 +17,20 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
         pdfBuffers: Buffer[];
         data: ConsultarMatriculaRequeridaDataResult;
     }> {
+
+        console.log('Navigating to the Matriculas Requeridas website');
+        
         // Navigate to the Matriculas Requeridas website
         await page.goto(MATRICULAS_REQUERIDAS_URL, {
             waitUntil: 'networkidle2'
         });
 
+        console.log('Filling the form with vehicle data:', vehicleData);
+
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
+
+        console.log('Filled the matricula field');
 
         // Fill the captcha code input with the value from window.captchaCode
         await page.evaluate(() => {
@@ -32,6 +39,8 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
                 captchaInput.value = (window as any).captchaCode;
             }
         });
+
+        console.log('Filled the captcha code field');
 
         // Take screenshot of the page with the data filled
         const screenshotBufferWithDataFilled = await page.screenshot({ fullPage: true });
@@ -52,8 +61,12 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
         const submitButtonSelector = 'button.btngubuy[type="submit"]';
         await page.click(submitButtonSelector);
 
+        console.log('Clicked the submit button');
+
         // Wait for navigation after form submission
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
+
+        console.log('Waited for navigation after form submission');
 
         // After form submission and waiting for navigation
         // Look for the "no infractions" label
