@@ -35,11 +35,11 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
 // Simple route for testing
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the TypeScript backend API' });
+    res.status(200).json({ message: 'Welcome to the TypeScript backend API' });
 });
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ message: 'Server is running' });
+    res.status(200).json({ message: 'Server is running' });
 });
 // Endpoint for infractions query
 app.post('/api/infractions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {

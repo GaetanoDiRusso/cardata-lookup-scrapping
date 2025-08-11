@@ -47,7 +47,7 @@ app.post('/api/infractions', async (req: Request, res: Response) => {
             { matricula, padron, departamento }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error processing infractions request:', error);
         res.status(500).json({ error: 'Failed to process infractions request' });
@@ -65,7 +65,7 @@ app.post('/api/debt', async (req: Request, res: Response) => {
             { matricula, padron, departamento }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error processing debt request:', error);
         res.status(500).json({ error: 'Failed to process debt request' });
@@ -83,7 +83,7 @@ app.post('/api/payment-agreement', async (req: Request, res: Response) => {
             { matricula, padron, departamento }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error processing payment agreement request:', error);
         res.status(500).json({ error: 'Failed to process payment agreement request' });
@@ -102,7 +102,7 @@ app.post('/api/matriculas-requeridas', async (req: Request, res: Response) => {
             { matricula }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error processing matricula requerida request:', error);
         res.status(500).json({ error: 'Failed to process matricula requerida request' });
@@ -139,7 +139,7 @@ app.post('/api/solicitar-certificado-sucive', async (req: Request, res: Response
             { vehicleData: { matricula, padron, departamento }, requesterData }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error requesting certificado sucive:', error);
         res.status(500).json({ error: 'Failed to request certificado sucive' });
@@ -166,7 +166,7 @@ app.post('/api/emitir-certificado-sucive', async (req: Request, res: Response) =
             { vehicleData: { matricula, padron, departamento }, requestNumber }
         );
 
-        res.json(result);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error requesting certificado sucive:', error);
         res.status(500).json({ error: 'Failed to request certificado sucive' });

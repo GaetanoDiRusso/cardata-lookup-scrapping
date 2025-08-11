@@ -2,3 +2,4 @@
 puppeteer-downloads/*
 public/*
 node_modules/*
+dist/*
