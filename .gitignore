@@ -1,5 +1,46 @@
+# Environment variables
 .env
-puppeteer-downloads/*
-public/*
-node_modules/*
-dist/*
+.env.local
+.env.*.local
+
+# Dependencies
+/node_modules
+
+# Build outputs
+/dist
+/build
+
+# Downloads and temporary files
+/puppeteer-downloads
+/public
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage directory used by tools like istanbul
+/coverage
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
