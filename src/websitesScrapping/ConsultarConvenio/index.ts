@@ -1,8 +1,9 @@
 import { solveCaptchaV2 } from '../../captcha/CapMonsterImp';
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { getDepartamentoValue } from './utils';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import type { Page } from 'puppeteer';
+import { getDepartmentNumberFromCode } from '../utils';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
+
 export type ConsultarConvenioData = Pick<VehiculePropertyRegisterData, 'matricula' | 'padron' | 'departamento'>;
 
 const SUCIVE_MULTAS_URL = 'https://www.sucive.gub.uy/consulta_convenio?2';
@@ -11,20 +12,12 @@ export type ConsultarConvenioDataResult = {
     hasConvenio: boolean;
 }
 
-export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioData): Promise<IWebsiteScrappingResult<ConsultarConvenioDataResult>> => {
-    // Launch a headless browser
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
-
+class ConsultarConvenioProcess extends BaseScrapingProcess<ConsultarConvenioData, ConsultarConvenioDataResult> {
+    protected async performScraping(page: Page, vehicleData: ConsultarConvenioData): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: ConsultarConvenioDataResult;
+    }> {
         // Navigate to the SUCIVE website
         await page.goto(SUCIVE_MULTAS_URL, {
             waitUntil: 'networkidle2'
@@ -33,7 +26,7 @@ export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioDat
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
         await page.type('#padron', vehicleData.padron.toString());
-        await page.select('#departamentoVehiculo', getDepartamentoValue(vehicleData.departamento));
+        await page.select('#departamentoVehiculo', getDepartmentNumberFromCode(vehicleData.departamento));
 
         // Check for presence of reCAPTCHA
         const captchaFrame = await page.frames().find(frame => frame.url().includes('recaptcha'));
@@ -54,9 +47,6 @@ export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioDat
                 key: captchaKey,
                 url: SUCIVE_MULTAS_URL
             });
-
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
 
             // Inject the solution into the reCAPTCHA iframe
             await page.evaluate((solution) => {
@@ -131,11 +121,11 @@ export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioDat
                 hasConvenio: !hasNoConvenioLabel,
             },
         };
-    } catch (error) {
-        console.error('Error scraping SUCIVE convenio:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const consultarConvenioProcess = new ConsultarConvenioProcess();
+
+export const getConsultarConvenioData = async (vehicleData: ConsultarConvenioData) => {
+    return await consultarConvenioProcess.execute(vehicleData);
+};

@@ -4,8 +4,8 @@ import { Vehicle } from "../entities/Vehicle";
 
 export interface ICreateFolderData {
     vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>;
-    buyer: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>;
-    seller: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>;
+    buyer?: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>; // Made optional
+    seller?: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>; // Made optional
 }
 
 export interface IFolderRepository {

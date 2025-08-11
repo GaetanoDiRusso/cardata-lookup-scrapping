@@ -1,6 +1,7 @@
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import type { Page } from 'puppeteer';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
+
 export type ConsultarMatriculaRequeridaData = Pick<VehiculePropertyRegisterData, 'matricula'>;
 
 const MATRICULAS_REQUERIDAS_URL = 'https://matriculas-requeridas.minterior.gub.uy/index.php';
@@ -10,20 +11,12 @@ export type ConsultarMatriculaRequeridaDataResult = {
     message: string;
 }
 
-export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarMatriculaRequeridaData): Promise<IWebsiteScrappingResult<ConsultarMatriculaRequeridaDataResult>> => {
-    // Launch a headless browser
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
-
+class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMatriculaRequeridaData, ConsultarMatriculaRequeridaDataResult> {
+    protected async performScraping(page: Page, vehicleData: ConsultarMatriculaRequeridaData): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: ConsultarMatriculaRequeridaDataResult;
+    }> {
         // Navigate to the Matriculas Requeridas website
         await page.goto(MATRICULAS_REQUERIDAS_URL, {
             waitUntil: 'networkidle2'
@@ -101,11 +94,11 @@ export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarM
             pdfBuffers: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
             data: alertResult,
         };
-    } catch (error) {
-        console.error('Error scraping Matriculas Requeridas:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const consultarMatriculaRequeridaProcess = new ConsultarMatriculaRequeridaProcess();
+
+export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarMatriculaRequeridaData) => {
+    return await consultarMatriculaRequeridaProcess.execute(vehicleData);
+};

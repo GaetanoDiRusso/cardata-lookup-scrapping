@@ -1,10 +1,8 @@
 import { solveCaptchaV2 } from '../../captcha/CapMonsterImp';
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { getDepartamentoValue } from './utils';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
-import { PassThrough } from 'stream';
+import type { Page } from 'puppeteer';
+import { getDepartmentNumberFromCode } from '../utils';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
 
 export type ConsultarInfraccionesData = Pick<VehiculePropertyRegisterData, 'matricula' | 'padron' | 'departamento'>;
 
@@ -14,40 +12,21 @@ export type ConsultarInfraccionesDataResult = {
     hasInfractions: boolean;
 }
 
-export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfraccionesData): Promise<IWebsiteScrappingResult<ConsultarInfraccionesDataResult>> => {
-    // Launch a headless browser
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
-
-        const passThrough = new PassThrough();
-        const recorder = new PuppeteerScreenRecorder(page);
-        await recorder.startStream(passThrough);
-
-        // Save the video stream to a Buffer
-        let chunks: Buffer[] = [];
-
-        passThrough.on('data', (chunk) => {
-            chunks.push(chunk);
-        });
-
+class ConsultarInfraccionesProcess extends BaseScrapingProcess<ConsultarInfraccionesData, ConsultarInfraccionesDataResult> {
+    protected async performScraping(page: Page, vehicleData: ConsultarInfraccionesData): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: ConsultarInfraccionesDataResult;
+    }> {
         // Navigate to the SUCIVE website
         await page.goto(SUCIVE_MULTAS_URL, {
             waitUntil: 'networkidle2'
         });
-
+        
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
         await page.type('#padron', vehicleData.padron.toString());
-        await page.select('#departamento', getDepartamentoValue(vehicleData.departamento));
+        await page.select('#departamento', getDepartmentNumberFromCode(vehicleData.departamento));
 
         // Check for presence of reCAPTCHA
         const captchaFrame = await page.frames().find(frame => frame.url().includes('recaptcha'));
@@ -69,18 +48,15 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
                 url: SUCIVE_MULTAS_URL
             });
 
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
-
             console.log('captchaSolutionString', captchaSolutionString);
 
             // Inject the solution into the reCAPTCHA iframe
             await page.evaluate((solution) => {
                 console.log('solution', solution);
-
+                
                 // Try to find the input in different ways
                 let input = document.querySelector('textarea[name="g-recaptcha-response"]');
-
+                
                 console.log('input', input);
 
                 // Create a textarea with g-recaptcha-response if it doesn't exist
@@ -96,13 +72,24 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
                 }
             }, captchaSolutionString);
         }
-
+        
         // Click the submit button - you'll need to find the actual selector for the submit button
         const submitButtonSelector = 'button[name="buttonPanel:buscarLink"]';
         await page.click(submitButtonSelector);
 
         // Wait for navigation after form submission
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
+
+        // Check for error message indicating incorrect vehicle data
+        const errorMessage = 'No se encuentra vehículo con los datos ingresados, verifique los datos. En caso de ser correctos, por favor diríjase al gobierno departamental.';
+        const hasError = await page.evaluate((errorText) => {
+            const elements = Array.from(document.querySelectorAll('label, p, div, span'));
+            return elements.some(el => el.textContent?.includes(errorText));
+        }, errorMessage);
+
+        if (hasError) {
+            throw new Error(`Vehicle data is incorrect: ${errorMessage}`);
+        }
 
         // After form submission and waiting for navigation
         // Look for the "no infractions" label
@@ -116,13 +103,9 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
 
         // Take a screenshot of the results page
         const screenshotBuffer = await page.screenshot({ fullPage: true });
-
-        await recorder.stop();
-
-        const videoBuffer = Buffer.concat(chunks);
-
+        
         // Generate PDF of the page
-        const pdfBuffer = await page.pdf({
+        const pdfBuffer = await page.pdf({ 
             format: 'A4',
             printBackground: true,
             margin: {
@@ -136,16 +119,15 @@ export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfracc
         return {
             imageBuffers: [Buffer.from(screenshotBuffer)],
             pdfBuffers: [Buffer.from(pdfBuffer)],
-            videoBuffers: [videoBuffer], // Solo un video por scraping
             data: {
                 hasInfractions: !hasNoInfractionsLabel,
             },
         };
-    } catch (error) {
-        console.error('Error scraping SUCIVE infractions:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const consultarInfraccionesProcess = new ConsultarInfraccionesProcess();
+
+export const getConsultarInfraccionesData = async (vehicleData: ConsultarInfraccionesData) => {
+    return await consultarInfraccionesProcess.execute(vehicleData);
+};

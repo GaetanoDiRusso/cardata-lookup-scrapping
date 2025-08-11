@@ -16,7 +16,7 @@ dotenv.config();
 
 // Initialize express app
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -116,22 +116,18 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Endpoint for requesting certificado sucive
 app.post('/api/solicitar-certificado-sucive', async (req: Request, res: Response) => {
     try {
-        const { userId } = req.body;
-        const { matricula, padron, departamento } = req.body.vehicleData;
+        const { userId, vehicleData, requesterData } = req.body;
+        const { matricula, padron, departamento } = vehicleData;
 
         if (!matricula || !padron || !departamento) {
             res.status(400).json({ error: 'Missing required fields: matricula, padron, departamento' });
             return;
         }
 
-        const requesterData = {
-            fullName: "Gaetano Di Russo",
-            identificationType: "CI" as "CI" | "RUT",
-            identificationNumber: "51717915",
-            email: "dirussogaetano@gmail.com",
-            phoneNumber: "09755597",
-            address: "Av Estanislao Lopez 4716"
-        };
+        if (!requesterData || !requesterData.fullName || !requesterData.identificationNumber || !requesterData.email || !requesterData.phoneNumber || !requesterData.address) {
+            res.status(400).json({ error: 'Missing required requester data: fullName, identificationNumber, email' });
+            return;
+        }
 
         const result = await solicitarCertificadoSuciveUseCase(
             { userId },

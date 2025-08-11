@@ -1,28 +1,21 @@
 import { solveCaptchaV2 } from '../../captcha/CapMonsterImp';
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { getDepartamentoValue } from './utils';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import type { Page } from 'puppeteer';
+import { getDepartmentNumberFromCode } from '../utils';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
+
 export type ConsultarDeudaData = Pick<VehiculePropertyRegisterData, 'matricula' | 'padron' | 'departamento'>;
 
 const SUCIVE_MULTAS_URL = 'https://www.sucive.gub.uy/consulta_deuda?0';
 
 export type ConsultarDeudaDataResult = {}
 
-export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData): Promise<IWebsiteScrappingResult<ConsultarDeudaDataResult>> => {
-    // Launch a headless browser
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-        
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
-        
+class ConsultarDeudaProcess extends BaseScrapingProcess<ConsultarDeudaData, ConsultarDeudaDataResult> {
+    protected async performScraping(page: Page, vehicleData: ConsultarDeudaData): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: ConsultarDeudaDataResult;
+    }> {
         // Navigate to the SUCIVE website
         await page.goto(SUCIVE_MULTAS_URL, {
             waitUntil: 'networkidle2'
@@ -31,7 +24,7 @@ export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData): Pr
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
         await page.type('#padron', vehicleData.padron.toString());
-        await page.select('#departamento', getDepartamentoValue(vehicleData.departamento));
+        await page.select('#departamento', getDepartmentNumberFromCode(vehicleData.departamento));
 
         // Check for presence of reCAPTCHA
         const captchaFrame = await page.frames().find(frame => frame.url().includes('recaptcha'));
@@ -52,9 +45,6 @@ export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData): Pr
                 key: captchaKey,
                 url: SUCIVE_MULTAS_URL
             });
-
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
 
             console.log('captchaSolutionString', captchaSolutionString);
 
@@ -119,11 +109,11 @@ export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData): Pr
             pdfBuffers: [Buffer.from(pdfBuffer)],
             data: {},
         };
-    } catch (error) {
-        console.error('Error scraping SUCIVE deuda:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const consultarDeudaProcess = new ConsultarDeudaProcess();
+
+export const getConsultarDeudaData = async (vehicleData: ConsultarDeudaData) => {
+    return await consultarDeudaProcess.execute(vehicleData);
+};

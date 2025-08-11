@@ -1,10 +1,10 @@
 import { solveCaptchaV2 } from '../../captcha/CapMonsterImp';
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { getDepartamentoValue } from './utils';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import type { Page } from 'puppeteer';
+import { getDepartmentNumberFromCode } from '../utils';
 import path from 'path';
 import { readFileSync, unlinkSync, rmdirSync } from 'fs';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
 
 import { PuppeteerExtra } from 'puppeteer-extra';
 import userPreferencesPlugin from 'puppeteer-extra-plugin-user-preferences';
@@ -15,57 +15,52 @@ const EMITIR_CERTIFICADO_SUCIVE_URL = 'https://www.sucive.gub.uy/consulta_certif
 
 export type EmitirCertificadoSuciveDataResult = {}
 
-export const emitirCertificadoSuciveData = async (vehicleData: EmitirCertificadoSuciveData, requestNumber: string): Promise<IWebsiteScrappingResult<EmitirCertificadoSuciveDataResult>> => {
-    // Launch a headless browser
+export type EmitirCertificadoSuciveInput = {
+    vehicleData: EmitirCertificadoSuciveData;
+    requestNumber: string;
+}
 
-    const puppeteerExtra = new PuppeteerExtra(puppeteer);
-    puppeteerExtra.use(userPreferencesPlugin({
-        userPrefs: {
-            download: {
-                prompt_for_download: false,
-                open_pdf_in_system_reader: true,
-            },
-            plugins: {
-                always_open_pdf_externally: true,
+class EmitirCertificadoSuciveProcess extends BaseScrapingProcess<EmitirCertificadoSuciveInput, EmitirCertificadoSuciveDataResult> {
+    protected async launchBrowser(headless: boolean = true) {
+        const puppeteerExtra = new PuppeteerExtra(require('puppeteer'));
+        puppeteerExtra.use(userPreferencesPlugin({
+            userPrefs: {
+                download: {
+                    prompt_for_download: false,
+                    open_pdf_in_system_reader: true,
+                },
+                plugins: {
+                    always_open_pdf_externally: true,
+                }
             }
-        }
-    }));
+        }));
 
-    const browser = await puppeteerExtra.launch({
-        headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        downloadBehavior: {
-            policy: 'allow',
-            downloadPath: path.join(process.cwd(), 'puppeteer-downloads')
-        }
-    });
+        return await puppeteerExtra.launch({
+            headless,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            downloadBehavior: {
+                policy: 'allow',
+                downloadPath: path.join(process.cwd(), 'puppeteer-downloads')
+            }
+        });
+    }
 
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
+    protected async performScraping(page: Page, input: EmitirCertificadoSuciveInput): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: EmitirCertificadoSuciveDataResult;
+    }> {
+        const { vehicleData, requestNumber } = input;
 
         // Navigate to the SUCIVE website
         await page.goto(EMITIR_CERTIFICADO_SUCIVE_URL, {
             waitUntil: 'networkidle2'
         });
 
-        // // Set a temporary unique download path
-        // const downloadPath = path.join(process.cwd(), 'puppeteer-downloads', `certificado-${Date.now()}-${vehicleData.matricula}-${requestNumber}.pdf`);
-
-        // // // Enable PDF download
-        // // const cdpSession = await page.createCDPSession();
-        // // cdpSession.send('Browser.setDownloadBehavior', {
-        // //     behavior: 'allow',
-        // //     downloadPath: downloadPath
-        // // });
-
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
         await page.type('#padron', vehicleData.padron.toString());
-        await page.select('#departamento', getDepartamentoValue(vehicleData.departamento));
+        await page.select('#departamento', getDepartmentNumberFromCode(vehicleData.departamento));
         await page.type('#nroTramite', requestNumber);
 
         // Check for presence of reCAPTCHA
@@ -87,9 +82,6 @@ export const emitirCertificadoSuciveData = async (vehicleData: EmitirCertificado
                 key: captchaKey,
                 url: EMITIR_CERTIFICADO_SUCIVE_URL
             });
-
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
 
             console.log('captchaSolutionString', captchaSolutionString);
 
@@ -171,11 +163,11 @@ export const emitirCertificadoSuciveData = async (vehicleData: EmitirCertificado
             pdfBuffers: [pdfBuffer],
             data: {},
         };
-    } catch (error) {
-        console.error('Error scraping SUCIVE deuda:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const emitirCertificadoSuciveProcess = new EmitirCertificadoSuciveProcess();
+
+export const emitirCertificadoSuciveData = async (vehicleData: EmitirCertificadoSuciveData, requestNumber: string) => {
+    return await emitirCertificadoSuciveProcess.execute({ vehicleData, requestNumber }, false);
+};

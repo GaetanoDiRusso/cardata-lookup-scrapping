@@ -1,8 +1,9 @@
 import { solveCaptchaV2 } from '../../captcha/CapMonsterImp';
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
-import puppeteer from 'puppeteer';
-import { getDepartamentoValue } from './utils';
-import { IWebsiteScrappingResult } from '../IWebsiteScrappingResult';
+import type { Page } from 'puppeteer';
+import { getDepartmentNumberFromCode } from '../utils';
+import { BaseScrapingProcess } from '../BaseScrapingProcess';
+
 export type ConsultarDeudaData = Pick<VehiculePropertyRegisterData, 'matricula' | 'padron' | 'departamento'>;
 
 const SOLICITAR_CERTIFICADO_SUCIVE_URL = 'https://www.sucive.gub.uy/solicitud_certificado_sucive?3';
@@ -21,31 +22,29 @@ export type SolicitarCertificadoSuciveDataResult = {
     error?: string;
 }
 
-export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData, requesterData: RequesterData): Promise<IWebsiteScrappingResult<SolicitarCertificadoSuciveDataResult>> => {
+export type SolicitarCertificadoSuciveInput = {
+    vehicleData: ConsultarDeudaData;
+    requesterData: RequesterData;
+}
 
-    // Sanitize requester identification data
-    if (requesterData.identificationType === 'CI') {
-        if (requesterData.identificationNumber.length !== 8) {
-            throw new Error('Invalid CI number');
+class SolicitarCertificadoSuciveProcess extends BaseScrapingProcess<SolicitarCertificadoSuciveInput, SolicitarCertificadoSuciveDataResult> {
+    protected async performScraping(page: Page, input: SolicitarCertificadoSuciveInput): Promise<{
+        imageBuffers: Buffer[];
+        pdfBuffers: Buffer[];
+        data: SolicitarCertificadoSuciveDataResult;
+    }> {
+        const { vehicleData, requesterData } = input;
+
+        // Sanitize requester identification data
+        if (requesterData.identificationType === 'CI') {
+            if (requesterData.identificationNumber.length !== 8) {
+                throw new Error('Invalid CI number');
+            }
+
+            requesterData.identificationNumber = requesterData.identificationNumber.replace(/\./g, '');
+            requesterData.identificationNumber = requesterData.identificationNumber.replace(/\-/g, '');
+            requesterData.identificationNumber = requesterData.identificationNumber.slice(0, -1) + '-' + requesterData.identificationNumber.slice(-1);
         }
-
-        requesterData.identificationNumber = requesterData.identificationNumber.replace(/\./g, '');
-        requesterData.identificationNumber = requesterData.identificationNumber.replace(/\-/g, '');
-        requesterData.identificationNumber = requesterData.identificationNumber.slice(0, -1) + '-' + requesterData.identificationNumber.slice(-1);
-    }
-
-    // Launch a headless browser
-    const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    try {
-        // Create a new page
-        const page = await browser.newPage();
-
-        // Set viewport size
-        await page.setViewport({ width: 1280, height: 800 });
 
         // Navigate to the SUCIVE website
         await page.goto(SOLICITAR_CERTIFICADO_SUCIVE_URL, {
@@ -55,7 +54,7 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
         await page.type('#padron', vehicleData.padron.toString());
-        await page.select('#departamento', getDepartamentoValue(vehicleData.departamento));
+        await page.select('#departamento', getDepartmentNumberFromCode(vehicleData.departamento));
 
         // Take a screenshot with the initial data filled
         const initialDataScreenshotBuffer = await page.screenshot({ fullPage: true });
@@ -92,9 +91,6 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
                 url: SOLICITAR_CERTIFICADO_SUCIVE_URL
             });
 
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
-
             console.log('captchaSolutionString', captchaSolutionString);
 
             // Inject the solution into the reCAPTCHA iframe
@@ -124,6 +120,9 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
         const submitButtonSelector = 'button[name="buttonPanel:buscarLink"]';
         await page.click(submitButtonSelector);
 
+        // Wait for navigation and check for error message
+        await page.waitForNavigation({ waitUntil: 'networkidle0' });
+
         const errorMessage = await page.evaluate(() => {
             const errorElement = document.querySelector('.feedbackPanelERROR span');
             return errorElement ? errorElement.textContent : null;
@@ -133,9 +132,6 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
             // TODO: Add a custom error
             throw new Error('Ya existe un trámite pendiente de pago para este vehículo');
         }
-
-        // Wait for navigation and check for error message
-        await page.waitForNavigation({ waitUntil: 'networkidle0' });        
 
         // Let's fill the form with requester data
         await page.type('#nombreSolicitante', requesterData.fullName);
@@ -187,9 +183,6 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
                 key: captchaKey,
                 url: SOLICITAR_CERTIFICADO_SUCIVE_URL
             });
-
-            const html = await page.content();
-            await require('fs').promises.writeFile('page.html', html);
 
             console.log('captchaSolutionString', captchaSolutionString);
 
@@ -251,11 +244,11 @@ export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData
                 transactionNumber: transactionNumber || undefined
             },
         };
-    } catch (error) {
-        console.error('Error scraping SUCIVE deuda:', error);
-        throw error;
-    } finally {
-        // Always close the browser
-        await browser.close();
     }
 }
+
+const solicitarCertificadoSuciveProcess = new SolicitarCertificadoSuciveProcess();
+
+export const solicitarCertificadoSucive = async (vehicleData: ConsultarDeudaData, requesterData: RequesterData) => {
+    return await solicitarCertificadoSuciveProcess.execute({ vehicleData, requesterData }, false);
+};
