@@ -1,7 +1,18 @@
+"use strict";
 // TEMPORARILY DISABLED - Folder functionality not implemented yet
 // This file contains incomplete implementations that are blocking the build
 // The folder routes are not registered in the main server, so this can be safely disabled
-
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteFolder = exports.createFolder = exports.getFolderById = exports.getAllFolders = void 0;
 /*
 import { Folder, FolderPrev } from "../../entities/Folder";
 import { IFolderRepository } from "../../interfaces/IFolderRepository";
@@ -121,12 +132,12 @@ export const deleteFolder = async (userId: string, folderId: string) => {
     return { success: true };
 };
 */
-
 // Placeholder exports to prevent import errors
-export const getAllFolders = async (userId: string) => [];
-export const getFolderById = async (userId: string, folderId: string) => null;
-export const createFolder = async (userId: string) => ({});
-export const deleteFolder = async (userId: string, folderId: string) => ({ success: true });
-
-
-
+const getAllFolders = (userId) => __awaiter(void 0, void 0, void 0, function* () { return []; });
+exports.getAllFolders = getAllFolders;
+const getFolderById = (userId, folderId) => __awaiter(void 0, void 0, void 0, function* () { return null; });
+exports.getFolderById = getFolderById;
+const createFolder = (userId) => __awaiter(void 0, void 0, void 0, function* () { return ({}); });
+exports.createFolder = createFolder;
+const deleteFolder = (userId, folderId) => __awaiter(void 0, void 0, void 0, function* () { return ({ success: true }); });
+exports.deleteFolder = deleteFolder;

@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DepartamentoEnum = void 0;
+var DepartamentoEnum;
+(function (DepartamentoEnum) {
+    DepartamentoEnum["ARTIGAS"] = "Artigas";
+    DepartamentoEnum["CANELONES"] = "Canelones";
+    DepartamentoEnum["CERRO_LARGO"] = "Cerro Largo";
+    DepartamentoEnum["COLONIA"] = "Colonia";
+    DepartamentoEnum["DURAZNO"] = "Durazno";
+    DepartamentoEnum["FLORES"] = "Flores";
+    DepartamentoEnum["FLORIDA"] = "Florida";
+    DepartamentoEnum["LAVALLEJA"] = "Lavalleja";
+    DepartamentoEnum["MALDONADO"] = "Maldonado";
+    DepartamentoEnum["MONTEVIDEO"] = "Montevideo";
+    DepartamentoEnum["PAYSANDU"] = "Paysand\u00FA";
+    DepartamentoEnum["RIVERA"] = "Rivera";
+    DepartamentoEnum["RIO_NEGRO"] = "R\u00EDo Negro";
+    DepartamentoEnum["ROCHA"] = "Rocha";
+    DepartamentoEnum["SALTO"] = "Salto";
+    DepartamentoEnum["SAN_JOSE"] = "San Jos\u00E9";
+    DepartamentoEnum["SORIANO"] = "Soriano";
+    DepartamentoEnum["TACUAREMBO"] = "Tacuaremb\u00F3";
+    DepartamentoEnum["TREINTA_Y_TRES"] = "Treinta y Tres";
+})(DepartamentoEnum || (exports.DepartamentoEnum = DepartamentoEnum = {}));
