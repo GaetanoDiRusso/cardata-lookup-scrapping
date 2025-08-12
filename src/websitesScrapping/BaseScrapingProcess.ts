@@ -2,40 +2,53 @@ import puppeteer from 'puppeteer';
 import type { Page } from 'puppeteer';
 import { IWebsiteScrappingResult } from './IWebsiteScrappingResult';
 import { VideoRecorder } from '../utils/VideoRecorder';
+import { Logger } from '../domain/Logger';
 
 export abstract class BaseScrapingProcess<TData, TResult> {
-    protected abstract performScraping(page: Page, data: TData): Promise<{
+    protected abstract performScraping(page: Page, data: TData, logger: Logger): Promise<{
         imageBuffers: Buffer[];
         pdfBuffers: Buffer[];
         data: TResult;
     }>;
 
-    protected async launchBrowser(headless: boolean = true) {
+    protected async launchBrowser() {
         return await puppeteer.launch({
-            headless,
+            headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
     }
 
-    async execute(data: TData, headless: boolean = true): Promise<IWebsiteScrappingResult<TResult>> {
-        const browser = await this.launchBrowser(headless);
+    async execute(data: TData, logger: Logger): Promise<IWebsiteScrappingResult<TResult>> {
+        logger.info('Starting to launch browser', { data });
+
+        const browser = await this.launchBrowser();
         let videoRecorder: VideoRecorder | null = null;
 
         let page: Page | null = null;
+
+        logger.info('Browser launched successfully');
 
         try {
             page = await browser.newPage();
             await page.setViewport({ width: 1280, height: 800 });
 
+            logger.info('Page created successfully');
+
             // Initialize video recorder
             videoRecorder = new VideoRecorder(page);
             await videoRecorder.start();
 
+            logger.info('Video recorder started successfully');
+
             // Perform the actual scraping (implemented by subclasses)
-            const result = await this.performScraping(page, data);
+            const result = await this.performScraping(page, data, logger);
+
+            logger.info('Scraping completed successfully', { resultData: result.data, imageBuffersLength: result.imageBuffers.length, pdfBuffersLength: result.pdfBuffers.length });
 
             // Stop recording and get video buffer
             const videoBuffer = await videoRecorder.stop();
+
+            logger.info('Video recorder stopped successfully', { videoBufferLength: videoBuffer?.length });
 
             return {
                 ...result,
@@ -44,11 +57,11 @@ export abstract class BaseScrapingProcess<TData, TResult> {
                 error: undefined
             };
         } catch (error) {
-            console.error('Error in scraping process:', error);
+            logger.error('Error in scraping process', { error });
 
             const videoBuffer = await videoRecorder?.stop();
 
-            // const errorScreenshotBuffer = await page?.screenshot({ fullPage: true });
+            logger.info('Video recorder stopped successfully after error', { videoBufferLength: videoBuffer?.length });
 
             return {
                 imageBuffers: [],
@@ -64,6 +77,8 @@ export abstract class BaseScrapingProcess<TData, TResult> {
                 await videoRecorder.cleanup();
             }
             await browser.close();
+
+            logger.info('Browser closed successfully');
         }
     }
 } 

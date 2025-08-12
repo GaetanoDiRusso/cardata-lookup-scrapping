@@ -2,6 +2,7 @@ import { solicitarCertificadoSucive, SolicitarCertificadoSuciveDataResult, Reque
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
 import { ConsultarDeudaData } from "../../websitesScrapping/SolicitarCertificadoSucive";
+import { Logger } from "../Logger";
 
 export type SolicitarCertificadoSuciveUseCaseParams = {
     vehicleData: ConsultarDeudaData;
@@ -17,7 +18,7 @@ interface ConsultarCertificadoSuciveParams extends BaseParams {
 
 class ConsultarCertificadoSuciveUseCase extends BaseScrapingUseCase<SolicitarCertificadoSuciveDataResult, ConsultarCertificadoSuciveParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: ConsultarCertificadoSuciveParams) => solicitarCertificadoSucive(params.vehicleData, params.requesterData);
+        return (params: ConsultarCertificadoSuciveParams, logger: Logger) => solicitarCertificadoSucive(params.vehicleData, params.requesterData, logger);
     }
 
     protected getScrapingParams(currentUser: BaseUser, params: ConsultarCertificadoSuciveParams): ConsultarCertificadoSuciveParams {

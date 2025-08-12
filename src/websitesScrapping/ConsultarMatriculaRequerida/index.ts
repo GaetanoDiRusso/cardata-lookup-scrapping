@@ -1,6 +1,7 @@
 import type { VehiculePropertyRegisterData } from '../../domain/VehiculeData';
 import type { Page } from 'puppeteer';
 import { BaseScrapingProcess } from '../BaseScrapingProcess';
+import { Logger } from '../../domain/Logger';
 
 export type ConsultarMatriculaRequeridaData = Pick<VehiculePropertyRegisterData, 'matricula'>;
 
@@ -12,25 +13,25 @@ export type ConsultarMatriculaRequeridaDataResult = {
 }
 
 class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMatriculaRequeridaData, ConsultarMatriculaRequeridaDataResult> {
-    protected async performScraping(page: Page, vehicleData: ConsultarMatriculaRequeridaData): Promise<{
+    protected async performScraping(page: Page, vehicleData: ConsultarMatriculaRequeridaData, logger: Logger): Promise<{
         imageBuffers: Buffer[];
         pdfBuffers: Buffer[];
         data: ConsultarMatriculaRequeridaDataResult;
     }> {
 
-        console.log('Navigating to the Matriculas Requeridas website');
+        logger.info('Navigating to the Matriculas Requeridas website', { MATRICULAS_REQUERIDAS_URL, vehicleData });
         
         // Navigate to the Matriculas Requeridas website
         await page.goto(MATRICULAS_REQUERIDAS_URL, {
             waitUntil: 'networkidle2'
         });
 
-        console.log('Filling the form with vehicle data:', vehicleData);
+        logger.info('Filling the form with vehicle data', { vehicleData });
 
         // Fill the form with vehicle data
         await page.type('#matricula', vehicleData.matricula);
 
-        console.log('Filled the matricula field');
+        logger.info('Matricula field filled successfully');
 
         // Fill the captcha code input with the value from window.captchaCode
         await page.evaluate(() => {
@@ -40,10 +41,12 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
             }
         });
 
-        console.log('Filled the captcha code field');
+        logger.info('Captcha code field filled successfully');
 
         // Take screenshot of the page with the data filled
         const screenshotBufferWithDataFilled = await page.screenshot({ fullPage: true });
+
+        logger.info('Screenshot of the page with the data filled taken successfully');
 
         // Generate PDF of the page with the data filled
         const pdfBufferWithDataFilled = await page.pdf({
@@ -57,16 +60,20 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
             }
         });
 
+        logger.info('PDF of the page with the data filled generated successfully');
+
         // Click the submit button - you'll need to find the actual selector for the submit button
         const submitButtonSelector = 'button.btngubuy[type="submit"]';
         await page.click(submitButtonSelector);
 
-        console.log('Clicked the submit button');
+        logger.info('Submit button clicked successfully');
+
+        logger.info('Waiting for navigation after form submission');
 
         // Wait for navigation after form submission
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
 
-        console.log('Waited for navigation after form submission');
+        logger.info('Navigation after form submission completed successfully');
 
         // After form submission and waiting for navigation
         // Look for the "no infractions" label
@@ -80,7 +87,10 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
             };
         });
 
+        logger.info('Alert result evaluated successfully', { alertResult });
+
         if (!alertResult) {
+            logger.info('Alert result not found, setting default value');
             alertResult = {
                 isRequired: null,
                 message: 'No se pudo obtener el resultado de la matrícula automáticamente. Por favor, verifique el PDF generado para obtener el resultado.'
@@ -102,6 +112,8 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
             }
         });
 
+        logger.info('PDF of the results page generated successfully');
+
         return {
             imageBuffers: [Buffer.from(screenshotBufferWithDataFilled), Buffer.from(screenshotBufferWithResult)],
             pdfBuffers: [Buffer.from(pdfBufferWithDataFilled), Buffer.from(pdfBufferWithResult)],
@@ -112,6 +124,6 @@ class ConsultarMatriculaRequeridaProcess extends BaseScrapingProcess<ConsultarMa
 
 const consultarMatriculaRequeridaProcess = new ConsultarMatriculaRequeridaProcess();
 
-export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarMatriculaRequeridaData) => {
-    return await consultarMatriculaRequeridaProcess.execute(vehicleData);
+export const getConsultarMatriculaRequeridaData = async (vehicleData: ConsultarMatriculaRequeridaData, logger: Logger) => {
+    return await consultarMatriculaRequeridaProcess.execute(vehicleData, logger);
 };

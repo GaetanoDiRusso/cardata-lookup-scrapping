@@ -2,6 +2,7 @@ import { ConsultarDeudaData, ConsultarDeudaDataResult, getConsultarDeudaData } f
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
 import { IWebsiteScrappingResult } from "../../websitesScrapping/IWebsiteScrappingResult";
+import { Logger } from "../Logger";
 
 export type GenerateAndSaveDebtDataRes = ConsultarDeudaDataResult;
 
@@ -11,8 +12,8 @@ interface DebtDataParams extends BaseParams {
 
 class DebtDataUseCase extends BaseScrapingUseCase<ConsultarDeudaDataResult, DebtDataParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: DebtDataParams): Promise<IWebsiteScrappingResult<ConsultarDeudaDataResult>> => {
-            return getConsultarDeudaData(params.vehicleData);
+        return (params: DebtDataParams, logger: Logger): Promise<IWebsiteScrappingResult<ConsultarDeudaDataResult>> => {
+            return getConsultarDeudaData(params.vehicleData, logger);
         };
     }
 
