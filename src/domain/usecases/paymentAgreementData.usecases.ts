@@ -1,6 +1,7 @@
 import { ConsultarConvenioData, ConsultarConvenioDataResult, getConsultarConvenioData } from "../../websitesScrapping/ConsultarConvenio";
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
+import { Logger } from "../Logger";
 
 export type GenerateAndSavePaymentAgreementDataRes = ConsultarConvenioDataResult;
 
@@ -10,7 +11,7 @@ interface PaymentAgreementDataParams extends BaseParams {
 
 class PaymentAgreementDataUseCase extends BaseScrapingUseCase<ConsultarConvenioDataResult, PaymentAgreementDataParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: PaymentAgreementDataParams) => getConsultarConvenioData(params.vehicleData);
+        return (params: PaymentAgreementDataParams, logger: Logger) => getConsultarConvenioData(params.vehicleData, logger);
     }
 
     protected getScrapingParams(currentUser: BaseUser, params: PaymentAgreementDataParams): PaymentAgreementDataParams {

@@ -1,4 +1,4 @@
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
+import { PuppeteerScreenRecorder, PuppeteerScreenRecorderOptions } from 'puppeteer-screen-recorder';
 import { PassThrough } from 'stream';
 import type { Page } from 'puppeteer';
 
@@ -7,15 +7,45 @@ export class VideoRecorder {
     private passThrough: PassThrough;
     private chunks: Buffer[] = [];
     private isRecording: boolean = false;
+    private ffmpegPath: string | null = null;
 
     constructor(private page: Page) {
-        this.recorder = new PuppeteerScreenRecorder(page);
+        // Try to find FFmpeg in Lambda environment
+        this.ffmpegPath = this.findFFmpegPath();
+        
+        this.recorder = new PuppeteerScreenRecorder(page, {
+            ffmpeg_Path: this.ffmpegPath || undefined,
+        } as PuppeteerScreenRecorderOptions);
+
         this.passThrough = new PassThrough();
         
         // Set up chunk collection
         this.passThrough.on('data', (chunk) => {
             this.chunks.push(chunk);
         });
+    }
+
+    private findFFmpegPath(): string | null {
+        // Common FFmpeg paths in Lambda
+        const ffmpegPaths = [
+            '/opt/bin/ffmpeg',        // ✅ Lambda Layer path (this will work!)
+            '/usr/bin/ffmpeg',        // System path (fallback)
+            process.env.FFMPEG_PATH || ''    // Environment variable
+        ];
+
+        for (const path of ffmpegPaths) {
+            try {
+                const { execSync } = require('child_process');
+                execSync(`test -f "${path}"`, { stdio: 'ignore' });
+                console.log('Found FFmpeg at:', path);
+                return path;
+            } catch {
+                continue;
+            }
+        }
+
+        console.log('FFmpeg not found, video recording may not work');
+        return null;
     }
 
     /**
@@ -25,9 +55,20 @@ export class VideoRecorder {
         if (this.isRecording) {
             throw new Error('Recording is already in progress');
         }
+
+        if (!this.ffmpegPath) {
+            console.log('Skipping video recording - FFmpeg not available');
+            this.isRecording = true;
+            return;
+        }
         
-        await this.recorder.startStream(this.passThrough);
-        this.isRecording = true;
+        try {
+            await this.recorder.startStream(this.passThrough);
+            this.isRecording = true;
+        } catch (error) {
+            console.log('Video recording failed, continuing without video:', (error as Error).message);
+            this.isRecording = true; // Mark as recording so we can still return empty buffer
+        }
     }
 
     /**
@@ -38,11 +79,18 @@ export class VideoRecorder {
             throw new Error('No recording in progress');
         }
 
-        await this.recorder.stop();
+        if (this.ffmpegPath) {
+            try {
+                await this.recorder.stop();
+            } catch (error) {
+                console.log('Error stopping video recorder:', (error as Error).message);
+            }
+        }
+
         this.isRecording = false;
 
         // Combine all chunks into a single buffer
-        const videoBuffer = Buffer.concat(this.chunks);
+        const videoBuffer = this.chunks.length > 0 ? Buffer.concat(this.chunks) : Buffer.alloc(0);
         
         // Clear chunks to free memory
         this.chunks = [];

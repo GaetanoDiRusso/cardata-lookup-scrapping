@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { DepartamentoEnum } from './domain/VehiculeData';
 import path from 'path';
 import { generateAndSaveInfractionData } from './domain/usecases/infractionData.usecases';
 import { generateAndSaveDebtData } from './domain/usecases/debtData.usecases';
@@ -9,7 +8,6 @@ import { generateAndSavePaymentAgreementData } from './domain/usecases/paymentAg
 import { generateAndSaveMatriculaRequeridaData } from './domain/usecases/matriculaRequeridaData.usecases';
 import { solicitarCertificadoSuciveUseCase } from './domain/usecases/consultarCertificadoSucive.usecases';
 import { emitirCertificadoSuciveDataUseCase } from './domain/usecases/emitirCertificadoSucive.usecases';
-import { mediaService } from './data/MediaServices';
 
 // Load environment variables
 dotenv.config();
@@ -177,3 +175,5 @@ app.post('/api/emitir-certificado-sucive', async (req: Request, res: Response) =
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+export default app;

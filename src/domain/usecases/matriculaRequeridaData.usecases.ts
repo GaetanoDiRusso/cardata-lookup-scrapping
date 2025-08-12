@@ -1,6 +1,7 @@
 import { ConsultarMatriculaRequeridaData, ConsultarMatriculaRequeridaDataResult, getConsultarMatriculaRequeridaData } from "../../websitesScrapping/ConsultarMatriculaRequerida";
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
+import { Logger } from "../Logger";
 
 export type GenerateAndSaveMatriculaRequeridaDataRes = ConsultarMatriculaRequeridaDataResult;
 
@@ -10,7 +11,7 @@ interface MatriculaRequeridaDataParams extends BaseParams {
 
 class MatriculaRequeridaDataUseCase extends BaseScrapingUseCase<ConsultarMatriculaRequeridaDataResult, MatriculaRequeridaDataParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: MatriculaRequeridaDataParams) => getConsultarMatriculaRequeridaData(params.vehicleData);
+        return (params: MatriculaRequeridaDataParams, logger: Logger) => getConsultarMatriculaRequeridaData(params.vehicleData, logger);
     }
 
     protected getScrapingParams(currentUser: BaseUser, params: MatriculaRequeridaDataParams): MatriculaRequeridaDataParams {

@@ -2,6 +2,7 @@ import { EmitirCertificadoSuciveData, EmitirCertificadoSuciveDataResult, emitirC
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
 import { IWebsiteScrappingResult } from "../../websitesScrapping/IWebsiteScrappingResult";
+import { Logger } from "../Logger";
 
 export type GenerateAndSaveEmitirCertificadoSuciveDataRes = EmitirCertificadoSuciveDataResult;
 
@@ -12,8 +13,8 @@ interface EmitirCertificadoParams extends BaseParams {
 
 class EmitirCertificadoSuciveUseCase extends BaseScrapingUseCase<EmitirCertificadoSuciveDataResult, EmitirCertificadoParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: EmitirCertificadoParams): Promise<IWebsiteScrappingResult<EmitirCertificadoSuciveDataResult>> => {
-            return emitirCertificadoSuciveData(params.vehicleData, params.requestNumber);
+        return (params: EmitirCertificadoParams, logger: Logger): Promise<IWebsiteScrappingResult<EmitirCertificadoSuciveDataResult>> => {
+            return emitirCertificadoSuciveData(params.vehicleData, params.requestNumber, logger);
         };
     }
 

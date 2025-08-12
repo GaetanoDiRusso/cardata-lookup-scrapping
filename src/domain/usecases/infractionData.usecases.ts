@@ -1,5 +1,6 @@
 import { ConsultarInfraccionesData, ConsultarInfraccionesDataResult, getConsultarInfraccionesData } from "../../websitesScrapping/ConsultarInfracciones";
 import { IGenerateAndSaveScrappedDataRes } from "../IGenerateAndSaveScrappedDataRes";
+import { Logger } from "../Logger";
 import { BaseScrapingUseCase, BaseUser, BaseParams } from "./BaseScrapingUseCase";
 
 export type GenerateAndSaveInfractionDataRes = ConsultarInfraccionesDataResult;
@@ -10,7 +11,7 @@ interface InfractionDataParams extends BaseParams {
 
 class InfractionDataUseCase extends BaseScrapingUseCase<ConsultarInfraccionesDataResult, InfractionDataParams, BaseUser> {
     protected getScrapingFunction() {
-        return (params: InfractionDataParams) => getConsultarInfraccionesData(params.vehicleData);
+        return (params: InfractionDataParams, logger: Logger) => getConsultarInfraccionesData(params.vehicleData, logger);
     }
 
     protected getScrapingParams(currentUser: BaseUser, params: InfractionDataParams): InfractionDataParams {
