@@ -1,0 +1,259 @@
+{
+	"info": {
+		"_postman_id": "cardata-lookup-api-collection",
+		"name": "Cardata Lookup API",
+		"description": "API collection for vehicle data lookup and SUCIVE certificate services",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "cardata-lookup-api"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["health"]
+				},
+				"description": "Health check endpoint to verify server status"
+			},
+			"response": []
+		},
+		{
+			"name": "Welcome",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/",
+					"host": ["{{baseUrl}}"],
+					"path": [""]
+				},
+				"description": "Welcome endpoint for API testing"
+			},
+			"response": []
+		},
+		{
+			"name": "Vehicle Infractions",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\",\n    \"padron\": \"123456789\",\n    \"departamento\": \"UYCL\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/infractions",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "infractions"]
+				},
+				"description": "Query vehicle infractions data"
+			},
+			"response": []
+		},
+		{
+			"name": "Vehicle Debt",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\",\n    \"padron\": \"123456789\",\n    \"departamento\": \"UYCL\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/debt",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "debt"]
+				},
+				"description": "Query vehicle debt data"
+			},
+			"response": []
+		},
+		{
+			"name": "Payment Agreement",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\",\n    \"padron\": \"123456789\",\n    \"departamento\": \"UYCL\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/payment-agreement",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "payment-agreement"]
+				},
+				"description": "Query vehicle payment agreement data"
+			},
+			"response": []
+		},
+		{
+			"name": "Matriculas Requeridas",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/matriculas-requeridas",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "matriculas-requeridas"]
+				},
+				"description": "Query required matriculas for a vehicle"
+			},
+			"response": []
+		},
+		{
+			"name": "Solicitar Certificado SUCIVE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\",\n    \"padron\": \"123456789\",\n    \"departamento\": \"UYCL\"\n  },\n  \"requesterData\": {\n    \"fullName\": \"Juan Pérez\",\n    \"identificationNumber\": \"12345678\",\n    \"email\": \"juan.perez@email.com\",\n    \"phoneNumber\": \"+59891234567\",\n    \"address\": \"Av. 18 de Julio 1234, Montevideo\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/solicitar-certificado-sucive",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "solicitar-certificado-sucive"]
+				},
+				"description": "Request SUCIVE certificate for a vehicle"
+			},
+			"response": []
+		},
+		{
+			"name": "Emitir Certificado SUCIVE",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userId\": \"abc123\",\n  \"vehicleData\": {\n    \"matricula\": \"ABC1234\",\n    \"padron\": \"123456789\",\n    \"departamento\": \"UYCL\"\n  },\n  \"requestNumber\": \"REQ2024001\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/emitir-certificado-sucive",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "emitir-certificado-sucive"]
+				},
+				"description": "Generate and download SUCIVE certificate"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3001",
+			"type": "string",
+			"description": "Base URL for the API server"
+		},
+		{
+			"key": "userId",
+			"value": "abc123",
+			"type": "string",
+			"description": "User ID for testing"
+		},
+		{
+			"key": "matricula",
+			"value": "ABC1234",
+			"type": "string",
+			"description": "Vehicle registration number"
+		},
+		{
+			"key": "padron",
+			"value": "123456789",
+			"type": "string",
+			"description": "Vehicle padron number"
+		},
+		{
+			"key": "departamento",
+			"value": "UYCL",
+			"type": "string",
+			"description": "Department code (e.g., UYCL for Canelones)"
+		}
+	]
+}

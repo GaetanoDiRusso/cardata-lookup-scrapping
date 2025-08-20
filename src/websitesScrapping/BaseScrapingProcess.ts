@@ -1,11 +1,8 @@
-// import puppeteer from 'puppeteer';
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
-
 import type { Page } from 'puppeteer';
 import { IWebsiteScrappingResult } from './IWebsiteScrappingResult';
 import { VideoRecorder } from '../utils/VideoRecorder';
 import { Logger } from '../domain/Logger';
+import { launchPuppeteerBrowser } from "./PuppeteerBrowser";
 
 export abstract class BaseScrapingProcess<TData, TResult> {
     protected abstract performScraping(page: Page, data: TData, logger: Logger): Promise<{
@@ -15,17 +12,7 @@ export abstract class BaseScrapingProcess<TData, TResult> {
     }>;
 
     protected async launchBrowser() {
-        const executablePath = await chromium.executablePath();
-        
-        return await puppeteer.launch({
-            // @ts-ignore
-            headless: chromium.headless,
-            args: chromium.args,
-            executablePath,
-            defaultViewport: { width: 1280, height: 800 },
-            env: { ...process.env, TZ: "America/Montevideo" }
-            // args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        return launchPuppeteerBrowser();
     }
 
     async execute(data: TData, logger: Logger): Promise<IWebsiteScrappingResult<TResult>> {

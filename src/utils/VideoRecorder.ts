@@ -8,8 +8,11 @@ export class VideoRecorder {
     private chunks: Buffer[] = [];
     private isRecording: boolean = false;
     private ffmpegPath: string | null = null;
+    private isLambda: boolean = false;
 
     constructor(private page: Page) {
+        this.isLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+
         // Try to find FFmpeg in Lambda environment
         this.ffmpegPath = this.findFFmpegPath();
         
@@ -26,6 +29,10 @@ export class VideoRecorder {
     }
 
     private findFFmpegPath(): string | null {
+        if (!this.isLambda) {
+            return null;
+        }
+
         // Common FFmpeg paths in Lambda
         const ffmpegPaths = [
             '/opt/bin/ffmpeg',        // ✅ Lambda Layer path (this will work!)
@@ -56,7 +63,7 @@ export class VideoRecorder {
             throw new Error('Recording is already in progress');
         }
 
-        if (!this.ffmpegPath) {
+        if (this.isLambda && !this.ffmpegPath) {
             console.log('Skipping video recording - FFmpeg not available');
             this.isRecording = true;
             return;
@@ -79,7 +86,7 @@ export class VideoRecorder {
             throw new Error('No recording in progress');
         }
 
-        if (this.ffmpegPath) {
+        if (this.ffmpegPath || !this.isLambda) {
             try {
                 await this.recorder.stop();
             } catch (error) {
